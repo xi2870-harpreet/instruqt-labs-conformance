@@ -141,14 +141,43 @@ Produces a layout that cannot render anything.
 
 ### D1 — sessions can hang with zero diagnostics  (P1)
 
-This probe lab (containers only, no cloud account) hangs at
-`Starting session...` indefinitely — observed >4 minutes with the progress bar
-frozen. The Logs UI shows **no events at any severity** for the session, so
-there is nothing for an author to act on.
+This probe lab (containers only, no cloud account) never reaches a running
+state. Deterministic — reproduced on every attempt. The Logs UI shows **no
+events at any severity** for any of these sessions, so an author has nothing to
+act on. That absence of diagnostics is the core defect here, independent of the
+underlying cause.
 
-Not attributed to a specific resource: removing the zero-condition task did not
-fix it, and the same `virtual_browser`-tab construct started fine in a different
-lab. Repro is this repo at `62fb584`.
+Bisected by removing one construct at a time and replaying (each row is a
+commit in this repo):
+
+| commit | change | result |
+|--------|--------|--------|
+| `62fb584` | baseline | stalls at `Starting session...` (~18%) |
+| `b622894` | − `template`, `copy`, `random_password` | stalls, same point |
+| `b1d4d32` | − `editor` + its tab | stalls, same point |
+| `0c80a44` | − nginx `web` container + `service` tab | stalls, same point |
+| `cd2f974` | − `note` + its tab | stalls, same point |
+| `0cb18ba` | − `quiz` + its question resources | **reaches `Creating infrastructure` (~38%), then stalls** |
+
+Ruled out as sole cause: `template`, `copy`, `random_password`, `editor`,
+`service` + its container, `note`, and the zero-condition `task` (C2).
+
+Removing the `quiz` measurably changes behaviour — the session progresses to a
+later stage before stalling — so the quiz appears to contribute at least one
+blocking factor. It is not the whole story: at `0cb18ba` the lab is close to a
+subset of a lab in the same team that starts and runs fine
+(`aws-cloud-account-lab-hp`, which uses network + containers + terminals +
+`external_website` + `virtual_browser` + `exec` + tasks), yet it still stalls.
+
+Two possibilities remain, and this needs someone with server-side visibility to
+separate them:
+
+1. there are two independent stall points, one quiz-related and one not; or
+2. the stall is environmental/platform-side for this lab or team, and the quiz
+   change shifted timing rather than fixing a cause.
+
+Either way the actionable defect for engineering is the same: **a session that
+cannot start should emit a log event.** Right now it emits nothing.
 
 ### D2 — `instruqt lab logs` is unauthorized for labs  (P3)
 
