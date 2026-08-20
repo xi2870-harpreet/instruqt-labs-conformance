@@ -10,27 +10,3 @@ resource "task" "noop" {
     }
   }
 }
-
-
-resource "single_choice_question" "q1" {
-  question    = "Which resource type is NOT in the layout tab-target table?"
-  answer      = "virtual_browser"
-  distractors = ["terminal", "service", "note"]
-  hints       = ["Check the layout reference."]
-}
-
-resource "multiple_choice_question" "q2" {
-  question    = "Which of these are documented but unregistered resource types?"
-  answer      = ["http", "image_cache"]
-  distractors = ["container", "template"]
-}
-
-resource "quiz" "qz" {
-  questions = [
-    resource.single_choice_question.q1,
-    resource.multiple_choice_question.q2,
-  ]
-  show_hints   = true
-  show_answers = true
-}
-
