@@ -11,13 +11,6 @@ resource "task" "noop" {
   }
 }
 
-# probe: docs say one or more conditions are required; validate accepts zero
-resource "task" "empty" {
-  description = "Task declared with zero conditions"
-  config {
-    target = resource.container.box
-  }
-}
 
 resource "single_choice_question" "q1" {
   question    = "Which resource type is NOT in the layout tab-target table?"

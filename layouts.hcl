@@ -23,16 +23,6 @@ resource "layout" "tabs_probe" {
       title  = "5 external_website"
       target = resource.external_website.ext
     }
-    # probe: documented resource, absent from the tab-target table
-    tab "t_vbrowser" {
-      title  = "6 virtual_browser"
-      target = resource.virtual_browser.vb
-    }
-    # probe: not a UI resource at all, yet accepted by validate
-    tab "t_container" {
-      title  = "7 container"
-      target = resource.container.box
-    }
   }
 
   column {
