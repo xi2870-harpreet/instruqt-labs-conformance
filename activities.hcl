@@ -34,11 +34,3 @@ resource "quiz" "qz" {
   show_answers = true
 }
 
-# probe: the task reference documents conditions as "one or more required",
-# but instruqt lab validate accepts a task with none.
-resource "task" "empty" {
-  description = "Task declared with zero conditions"
-  config {
-    target = resource.container.box
-  }
-}
