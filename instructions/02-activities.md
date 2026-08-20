@@ -1,3 +1,5 @@
 # Activity conformance
 
-Quiz removed for hang bisect.
+## Quiz
+
+<instruqt-quiz id="qz"></instruqt-quiz>

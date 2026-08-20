@@ -9,6 +9,10 @@ resource "page" "tabs" {
 resource "page" "activities" {
   title = "Activity conformance"
   file  = "instructions/02-activities.md"
+
+  activities = {
+    qz = resource.quiz.qz
+  }
 }
 
 resource "lab" "main" {
