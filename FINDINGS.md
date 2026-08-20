@@ -139,45 +139,43 @@ Produces a layout that cannot render anything.
 
 ## D. Runtime / diagnostics
 
-### D1 — sessions can hang with zero diagnostics  (P1)
+### D1 — the lab loading screen stops updating and never lets you in  (P1)
 
-This probe lab (containers only, no cloud account) never reaches a running
-state. Deterministic — reproduced on every attempt. The Logs UI shows **no
-events at any severity** for any of these sessions, so an author has nothing to
-act on. That absence of diagnostics is the core defect here, independent of the
-underlying cause.
+**Root cause found. This is a frontend bug, not an infrastructure hang.**
 
-Bisected by removing one construct at a time and replaying (each row is a
-commit in this repo):
+Symptom: after clicking Play, the loading screen sticks at `Starting session...`
+with the progress bar frozen (consistently around 18%) and never transitions to
+`Enter lab`. It stays that way indefinitely — observed well past 4 minutes.
+The Logs UI shows **no events at any severity**, because nothing is actually
+wrong server-side.
 
-| commit | change | result |
-|--------|--------|--------|
-| `62fb584` | baseline | stalls at `Starting session...` (~18%) |
-| `b622894` | − `template`, `copy`, `random_password` | stalls, same point |
-| `b1d4d32` | − `editor` + its tab | stalls, same point |
-| `0c80a44` | − nginx `web` container + `service` tab | stalls, same point |
-| `cd2f974` | − `note` + its tab | stalls, same point |
-| `0cb18ba` | − `quiz` + its question resources | **reaches `Creating infrastructure` (~38%), then stalls** |
+The session is in fact fully provisioned and ready. Opening the same lab URL in
+a **new browser tab** (or reloading) immediately shows the real state:
+progress bar at 100% and an `Enter lab` button. Entering gives a working lab —
+live terminal at `root@box:/#`, instructions rendered.
 
-Ruled out as sole cause: `template`, `copy`, `random_password`, `editor`,
-`service` + its container, `note`, and the zero-condition `task` (C2).
+So the loading view stops applying progress updates and never learns the
+session became ready. The learner is stranded on a screen that will never
+advance, with no error and nothing in the logs.
 
-Removing the `quiz` measurably changes behaviour — the session progresses to a
-later stage before stalling — so the quiz appears to contribute at least one
-blocking factor. It is not the whole story: at `0cb18ba` the lab is close to a
-subset of a lab in the same team that starts and runs fine
-(`aws-cloud-account-lab-hp`, which uses network + containers + terminals +
-`external_website` + `virtual_browser` + `exec` + tasks), yet it still stalls.
+Reproduced at commit `4079cca`: original tab frozen at `Starting session...`
+~18% while a fresh tab on the identical URL showed `Enter lab`.
 
-Two possibilities remain, and this needs someone with server-side visibility to
-separate them:
+**Workaround for authors/learners:** reload the page.
 
-1. there are two independent stall points, one quiz-related and one not; or
-2. the stall is environmental/platform-side for this lab or team, and the quiz
-   change shifted timing rather than fixing a cause.
+#### Retraction of an earlier bisect
 
-Either way the actionable defect for engineering is the same: **a session that
-cannot start should emit a log event.** Right now it emits nothing.
+An earlier version of this document attributed the stall to lab configuration
+and listed a bisect across `62fb584` → `0cb18ba` implicating the `quiz`
+resource. **That conclusion was wrong and is withdrawn.** Every one of those
+configurations starts correctly; each "stall" was the same stale loading screen,
+and the apparent progress differences between commits were just different
+snapshots of a frozen UI. `0cb18ba` was recorded as stalling and later started
+fine with no code change at all, which is what exposed the real cause.
+
+No lab-configuration finding should be drawn from that bisect. `template`,
+`copy`, `random_password`, `editor`, `service`, `note`, `quiz` and the
+zero-condition `task` are all exonerated as causes of the stall.
 
 ### D2 — `instruqt lab logs` is unauthorized for labs  (P3)
 
@@ -207,3 +205,21 @@ Worth recording so these aren't re-tested:
 - `network { id = ... }` accepts both `resource.network.main.meta.id` and the
   bare `resource.network.main`. Docs use both forms in different places; both
   work, so it's cosmetic.
+
+### D3 — layout tab `title` is ignored at play  (P2)
+
+A layout tab renders its **internal block name**, not its `title`:
+
+```hcl
+tab "t_terminal" {
+  title  = "1 terminal"      # ignored
+  target = resource.terminal.shell
+}
+```
+
+The played lab shows `T_terminal`. Confirmed for `terminal` and
+`external_website` targets, so it is not specific to `note` tabs.
+
+Already reported against `note` tabs by an Airlock customer on 2026-08-19; this
+widens the scope to tabs generally.
+
