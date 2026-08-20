@@ -1,9 +1,11 @@
-# C1a — a `container` as a layout tab target silently disables Play
+# C1a — `instruqt lab validate` misses a tab-target type error the platform catches
 
 **Branch:** `repro/c1a-container-tab-target`
 **CLI:** `2399-280cb75`
 
-## The config
+## The issue
+
+The **platform validator behaves correctly here** — this is a CLI gap.
 
 `layouts.hcl` contains a tab whose `target` is a `container`:
 
@@ -14,12 +16,7 @@ tab "t_container" {
 }
 ```
 
-`container` is not a UI resource. The
-[layout reference](https://docs.labs.instruqt.com/reference/content/layout)
-restricts tab `target` to `terminal`, `service`, `editor`, `external_website`,
-`note` and `cloud_credentials`.
-
-## Step 1 — the CLI accepts it
+### The CLI accepts it
 
 ```
 $ instruqt lab validate
@@ -27,46 +24,36 @@ $ instruqt lab validate
     [SUCCESS] Lab is valid
 ```
 
-## Step 2 — the platform disables Play, and says nothing
+### The platform rejects it, with a good message
 
-Import this branch as a lab and open its overview page. The **Play** button is
-rendered `disabled`:
+On the lab overview a warning icon appears next to the branch selector. Hovering
+it shows:
 
-```js
-> [...document.querySelectorAll('button')]
-    .find(b => /^\s*Play\s*$/.test(b.textContent)).disabled
-true
+```
+Validation error
+[error] layouts.hcl:1:1: target type "container" is not allowed for
+"column[0].tab[2].target"
+(resource: resource.layout.tabs_probe, field: column[0].tab[2].target)
 ```
 
-There is no explanation anywhere:
+Play is disabled, which is the right call.
 
-| Surface | Result |
-| --- | --- |
-| Tooltip on the button | none (`title` and `aria-label` are both `null`) |
-| Error banner on the page | none |
-| Text matching `error/invalid/cannot/failed` in the DOM | none |
-| Browser console | no errors |
-| Network on click | only a telemetry POST to `/rest/otel/v1/traces` |
-| Logs UI (all severities) | no events |
+## What should change
 
-## Isolation
+`instruqt lab validate` should apply the same tab-target type check the platform
+already applies, so this is caught locally instead of after a push. The platform
+message is exactly what the CLI should print.
 
-Bisected on this repo. Only the `container` tab target flips Play:
+## Correction
 
-| commit | layout contains | Play |
-| --- | --- | --- |
-| `dbbb265` | no probe tabs | enabled |
-| `e9d2b95` | `target = resource.container.box` | **disabled** |
-| `b8e03a5` | `target = resource.virtual_browser.vb` | enabled |
+An earlier version of this file claimed the disabled Play button had no
+explanation anywhere. **That was wrong.** The explanation is in a tooltip on the
+branch-selector warning icon; it only enters the DOM on hover, which is why an
+automated sweep of the page text, the button attributes, the console and the
+network missed it. The platform surfaces this properly.
 
-## Expected
+## Sibling case — tracked as C1b
 
-Either `instruqt lab validate` rejects a tab `target` that isn't one of the six
-supported UI types, or — if the platform is going to refuse the lab — the UI
-states the reason. Silently disabling Play with no diagnostic on any surface
-leaves the author with nothing to act on.
-
-## Related
-
-`virtual_browser` as a tab target is the sibling case: it also validates, the
-lab plays, and the tab simply never renders. Tracked separately as C1b.
+`virtual_browser` as a tab target behaves differently and worse: the platform
+validator raises **no** error, Play stays enabled, the lab runs, and the tab
+simply never renders. See `repro/c1b-virtual-browser-tab`.
