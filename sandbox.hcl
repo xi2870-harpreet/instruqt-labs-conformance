@@ -24,23 +24,3 @@ resource "container" "web" {
     id = resource.network.main.meta.id
   }
 }
-
-# Utility resources - do they actually materialise at runtime?
-resource "random_password" "pw" {
-  length = 16
-}
-
-resource "template" "tpl" {
-  source      = <<-EOT
-    rendered-by-template: {{who}}
-  EOT
-  destination = "./out/template-result.txt"
-  variables = {
-    who = "instruqt"
-  }
-}
-
-resource "copy" "cp" {
-  source      = "./files/plain.txt"
-  destination = "./out/"
-}
