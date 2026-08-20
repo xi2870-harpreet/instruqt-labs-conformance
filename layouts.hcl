@@ -14,6 +14,17 @@ resource "layout" "tabs_probe" {
       target = resource.virtual_browser.vb
     }
 
+    # ---- C1a REPRO -------------------------------------------------------
+    # `container` is not a UI resource and is absent from the layout
+    # reference's tab-target table, yet `instruqt lab validate` accepts this.
+    # Effect on the platform: the Play button renders disabled, with no
+    # tooltip, banner, console error, log event or network call explaining why.
+    # ----------------------------------------------------------------------
+    tab "t_container" {
+      title  = "container as tab target"
+      target = resource.container.box
+    }
+
     tab "t_extweb" {
       title  = "5 external_website"
       target = resource.external_website.ext
