@@ -11,10 +11,6 @@ resource "layout" "tabs_probe" {
       title  = "2 service"
       target = resource.service.webui
     }
-    tab "t_editor" {
-      title  = "3 editor"
-      target = resource.editor.code
-    }
     tab "t_note" {
       title  = "4 note"
       target = resource.note.hints

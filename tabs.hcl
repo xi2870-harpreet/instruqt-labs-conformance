@@ -9,13 +9,6 @@ resource "service" "webui" {
   scheme = "http"
 }
 
-resource "editor" "code" {
-  workspace "etc" {
-    target    = resource.container.box
-    directory = "/etc"
-  }
-}
-
 resource "note" "hints" {
   file = "notes/hints.md"
 }
