@@ -19,6 +19,12 @@ resource "layout" "tabs_probe" {
       title  = "4 note"
       target = resource.note.hints
     }
+    # BISECT probe: container is not a UI resource, yet validate accepts it
+    tab "t_container" {
+      title  = "7 container"
+      target = resource.container.box
+    }
+
     tab "t_extweb" {
       title  = "5 external_website"
       target = resource.external_website.ext
