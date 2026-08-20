@@ -3,12 +3,6 @@ resource "terminal" "shell" {
   shell  = "/bin/bash"
 }
 
-resource "service" "webui" {
-  target = resource.container.web
-  port   = 80
-  scheme = "http"
-}
-
 resource "note" "hints" {
   file = "notes/hints.md"
 }

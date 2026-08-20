@@ -7,10 +7,6 @@ resource "layout" "tabs_probe" {
       target = resource.terminal.shell
       active = true
     }
-    tab "t_service" {
-      title  = "2 service"
-      target = resource.service.webui
-    }
     tab "t_note" {
       title  = "4 note"
       target = resource.note.hints
