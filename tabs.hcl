@@ -3,10 +3,6 @@ resource "terminal" "shell" {
   shell  = "/bin/bash"
 }
 
-resource "note" "hints" {
-  file = "notes/hints.md"
-}
-
 resource "external_website" "ext" {
   url                = "https://example.com"
   open_in_new_window = true

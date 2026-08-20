@@ -7,10 +7,6 @@ resource "layout" "tabs_probe" {
       target = resource.terminal.shell
       active = true
     }
-    tab "t_note" {
-      title  = "4 note"
-      target = resource.note.hints
-    }
 
     # BISECT probe: virtual_browser is documented but absent from the tab-target table
     tab "t_vbrowser" {
